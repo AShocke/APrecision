@@ -1,0 +1,9 @@
+# Executables
+*.exe
+*.out
+*.app
+# vim memory files
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+.netrwhist
+*~
