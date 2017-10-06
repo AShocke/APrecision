@@ -1,14 +1,74 @@
+#include "precision.h"
 #include <cstdio>
 #include <vector>
 #include <iterator>
 #include <string>
 #include <cmath>
-#include "precision.h"
+#include <ctype.h>
 
+
+
+real_precision::real_precision(std::string str)
+{
+	if (str.size() == 0) {
+		fprintf(stderr, "No input was detected!\n");
+		empty_precision();
+		return;
+	}
+	std::vector<int> store;
+	int exp = 0; // Exponent of string representation of digit
+	int decimal_count = 0; // Number of '.' characters
+	bool insignificant = true; // Keeps track of insignificant zeroes.
+							   // If current number is zero, insignificant stays true
+	bool exponent_is_neg = false;
+	bool no_decimal = true;
+	is_negative_ = false;
+	size_t i = 0;
+	if (str[0] == '-') {
+		is_negative_ = true;
+		i++;
+	}
+	for (; i < str.size(); i++) {
+		if (str[i] - '0' == 0 && insignificant) {
+			if (exponent_is_neg)
+				exp--;
+		}
+		else if ((str[i] == '.' || str[i] == ',') && decimal_count == 0) {
+			no_decimal = false;
+			if (insignificant) {
+				exponent_is_neg = true;
+			}
+			else {
+				exp = i-1;
+			}
+		}
+		else if (!isdigit(str[i])){
+			fprintf(stderr, "Input is invalid! '%c' is not a digit! Please try again.\n"
+					, str[i]);
+			empty_precision();
+			return;
+		}
+		else {
+			store.push_back(str[i] - '0');
+			insignificant = false;
+		}
+		
+	}
+	if (no_decimal) {
+		exponent_ = store.size() - 1;
+	}
+	else {
+		exponent_ = exp;
+	}
+	store_ = store;
+}
 
 std::string real_precision::real_to_string()
 {
 	std::string real = "";
+	if (is_negative_) {
+		real.append("-");
+	}
 	int exp = exponent_;
 	if (exp < 0) {
    		real.append(".");
@@ -17,7 +77,7 @@ std::string real_precision::real_to_string()
 		    exp++;
 		}
 		for (unsigned i = 0; i < store_.size(); i++) {
-			printf("%d <--- number?\n", store_[i]);
+			printf("%d\n", store_[i]);
 			real.append(std::to_string(store_[i]));
 		}
 	}
@@ -54,8 +114,9 @@ real_precision real_precision::add(real_precision n)
 {
 	int sum_size = ((n.store_size() > store_.size())? n.store_size() : store_.size()) + 1;
 	std::vector<int> sum(sum_size);
-   	int last_digit = store_.size() - exponent_; // the exponent place of the last digit in the precision representation
-	int last_digit_n = n.store_size() - n.exponent_; // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	// the exponent (10^n) of the last digit in the precision representation
+	int last_digit = store_.size() - exponent_; 
+	int last_digit_n = n.store_size() - n.exponent_;
 	int between = abs(last_digit_n - last_digit); // number of zeroes inbetween the last dits
 	std::vector<int> least_store; // store with the last digit int the least digit place
 	std::vector<int> most_store; // the converse of least_store
