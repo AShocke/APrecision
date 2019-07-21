@@ -7,60 +7,17 @@
 #include <ctype.h>
 
 
-
-real_precision::real_precision(std::string str)
-{
-	if (str.size() == 0) {
-		fprintf(stderr, "No input was detected!\n");
-		empty_precision();
-		return;
-	}
-	std::vector<int> store;
-	int exp = 0; // Exponent of string representation of digit
-	int decimal_count = 0; // Number of '.' characters
-	bool insignificant = true; // Keeps track of insignificant zeroes.
-							   // If current number is zero, insignificant stays true
-	bool exponent_is_neg = false;
-	bool no_decimal = true;
-	is_negative_ = false;
-	size_t i = 0;
-	if (str[0] == '-') {
-		is_negative_ = true;
-		i++;
-	}
-	for (; i < str.size(); i++) {
-		if (str[i] - '0' == 0 && insignificant) {
-			if (exponent_is_neg)
-				exp--;
-		}
-		else if ((str[i] == '.' || str[i] == ',') && decimal_count == 0) {
-			no_decimal = false;
-			if (insignificant) {
-				exponent_is_neg = true;
-			}
-			else {
-				exp = i-1;
-			}
-		}
-		else if (!isdigit(str[i])){
-			fprintf(stderr, "Input is invalid! '%c' is not a digit! Please try again.\n"
-					, str[i]);
-			empty_precision();
-			return;
-		}
-		else {
-			store.push_back(str[i] - '0');
-			insignificant = false;
-		}
-		
-	}
-	if (no_decimal) {
-		exponent_ = store.size() - 1;
-	}
-	else {
-		exponent_ = exp;
-	}
-	store_ = store;
+real_precision::real_precision(bool negative, int exponent, int decimal_precision,
+			       int base, bool debug) {
+  int size = exponent + decimal_precision + 1;
+  decimal_precision = decimal_precision;
+  decimal_ = exponent;
+  exponent_ = exponent;
+  base_ = base;
+  is_negative_ = negative;
+  store_ =  new std::vector<int> (size);
+  store_size_ = size;
+  DEBUG = debug;
 }
 
 std::string real_precision::real_to_string()
@@ -71,31 +28,33 @@ std::string real_precision::real_to_string()
 	}
 	int exp = exponent_;
 	if (exp < 0) {
-   		real.append(".");
-		while (exp < -1) {
+   		real.append("0.");
+		int i = 0;
+		while (i < abs(exp) - 1) { // in an n x 10^(z) number, where z < 0,
+								   // there are |z| - 1 zeroes before the first number
 			real.append("0");
-		    exp++;
+		    i++;
 		}
-		for (unsigned i = 0; i < store_.size(); i++) {
-			printf("%d\n", store_[i]);
-			real.append(std::to_string(store_[i]));
+		for (int i = store_->size() - 1; i >= 0; i--) {
+		  printf("%d\n", (*store_)[i]);
+		  real.append(std::to_string((*store_)[i]));
 		}
 	}
 	else if (exp >= 0) {
 		
-		for(unsigned i = 0; i < store_.size(); i++) {
-			if (i == exp + 1) { // We always place to the right of exponent number!
+		for(int i = store_->size() - 1; i >= 0; i--) {
+			if (i == store_->size() - (exp + 1)) { // We always place to the right of exponent number!
 				real.append(".");
 			}
-			real.append(std::to_string(store_[i]));
+			real.append(std::to_string((*store_)[i]));
 		}
 		
-		if (exponent_ > store_.size()) {
+		if (exponent_ + 1 > store_->size()) {
 			/* In this case it is safe to compare a signed integer to a size_type because we know that
                exponent_ is greater than 0
 			*/
 			
-			for (unsigned i = 0; i < exponent_ - store_.size() - 1; i++) {
+			for (unsigned i = 0; i < exponent_  + 1 - store_->size(); i++) {
 				real.append("0");
 			}
 		}
@@ -106,105 +65,99 @@ std::string real_precision::real_to_string()
 
 real_precision real_precision::operator+(real_precision n)
 {
-	return n;
-	
+	return add(n);
 }
 
+/*
+ * Gradeschool addition algorithm
+ * Assumes that:
+ * **both numbers have the same base**
+ * the bases of the real_precision objects are valid with their stores
+ * Require that the numbers have the same all around precision, before and after decimal place
+ */
 real_precision real_precision::add(real_precision n)
 {
-	int sum_size = ((n.store_size() > store_.size())? n.store_size() : store_.size()) + 1;
-	std::vector<int> sum(sum_size);
-	// the exponent (10^n) of the last digit in the precision representation
-	int last_digit = store_.size() - exponent_; 
-	int last_digit_n = n.store_size() - n.exponent_;
-	int between = abs(last_digit_n - last_digit); // number of zeroes inbetween the last dits
-	std::vector<int> least_store; // store with the last digit int the least digit place
-	std::vector<int> most_store; // the converse of least_store
-	if (last_digit > last_digit_n) {
-		least_store = store_;
-		most_store = n.get_real_store();
-	}
-	else {
-		least_store = n.get_real_store();
-		most_store = store_;
-	}
-	printf("between: %d\n", between);
-	std::vector<int>::reverse_iterator rit = sum.rbegin();
-	std::vector<int>::reverse_iterator most_i = most_store.rbegin(); 
-	std::vector<int>::reverse_iterator least_i = least_store.rbegin();
-	for (least_i = least_store.rbegin(); least_i != least_store.rbegin() + between; least_i++) {
-		*rit = *least_i;
-		rit++;
-	}
-
-   	int carry = 0;
-    rit = sum.rbegin() + between;
-	least_i = least_store.rbegin() + between;
-	while (rit < sum.rend()) {
-		// If all real_precisions are exhausted then the sum vector is at its last element
-		// (Remember the sum vector size is the largest real_precisions size + 1)
-		if ((least_i == least_store.rend()) && (most_i == most_store.rend())) {
-			*rit = carry;
-			
-			rit++;
-		}
-		else if(least_i == least_store.rend()) {
-			*rit = (*most_i + carry) % 10;
-			carry = (*most_i + carry) / 10;
-			printf("*rit: %d, carry: %d: \n", *rit, carry);
-			rit++;
-			most_i++;
-		}
-		else if (most_i ==  most_store.rend()) {
-			*rit = (*least_i + carry) % 10;
-			carry = (*least_i + carry) / 10;
-			rit++;
-			least_i++;
+	if (DEBUG) {
+		printf("In add(real_precision)...\n");
+		printf("Adding %s and %s \n", this->real_to_string().c_str(),
+		       n.real_to_string().c_str());
+		if (exponent_ != n.exponent_ || decimal_precision_ != n.decimal_precision_) {
+		    std::cerr << "Real precision objects are not of the same precision. \n";
+		    return n;
 		}
 		else {
-			*rit = (*least_i + *most_i + carry) % 10;
-			carry =  (*least_i + *most_i + carry) / 10;
-			printf("carry: %d\n", carry);
-			rit++;
-			least_i++;
-			most_i++;
+		    
 		}
+		
 	}
-	for (std::vector<int>::iterator it = least_store.begin(); it != least_store.end(); it++) {
-		printf("%d ",*it);
-	}
-	printf("\n");
-   	int sum_exp = ((n.get_exponent() > exponent_)? n.get_exponent() : exponent_);
-	if (carry == 1) {
-		sum_exp++;
-		return real_precision(sum, false, sum_exp);
-	}
-	else {
-		sum.erase(sum.begin());
-	}
-	return real_precision(sum, false, sum_exp);
+	
+
+   if (DEBUG) {
+	   printf("leaving add...\n");
+   }
+   return n;
 }
 
-
+// copies the numbers of a given real_precison object to a vector
+void real_precision::copy_store(std::vector<int> store, int start_s,  int to_add,
+				std::vector<int> &n, int start_n)
+{
+	for (int i = start_n; i < start_n + to_add; i++ ) {
+		n[i] = store[start_s + start_n-i];
+	}
+}
 void real_precision::print()
 {
-	for (unsigned i = 0; i < store_.size(); i++) {
-		printf("%d ", store_[i]);
+	for (unsigned i = 0; i < store_->size(); i++) {
+	    printf("%d ", (*store_)[i]);
 	}
 	printf("\n");
 }
-void real_precision::print_to_string() {
+void real_precision::print_to_string()
+{
 	std::string s = this->real_to_string();
 	printf("%s\n", s.c_str());
 }
-// eg: transformes [1,3,4] exponent -3, to [0,0,1,3,4] representing .00134
-std::vector<int> expand(real_precision b, int before, int after) {
-	before += std::abs(b.get_exponent());
-	int size = before + after;
-	std::vector<int> expanded(size, 0);
-	for (int x = before; x < before + b.store_size(); x++) {
-		expanded[x] = b.get_real_store()[x - before];
-		
+
+/*
+ * 
+ * Private functions
+ *
+ */
+
+// prepares a vector for addition and subtraction
+int real_precision::find_size(real_precision x, real_precision y)
+{
+	if (DEBUG) {
+		printf("In find_size(real_precision, real_precision)\n\n");
 	}
-	return expanded;
+	int size;
+	int digits_before_x = x.before_decimal(); // digits before the decimal (to the right)
+	int digits_before_y = y.before_decimal();
+	int digits_after_x = x.after_decimal(); // digits after the decimal (to the right)
+	int digits_after_y = y.after_decimal();
+	// if (x.get_exponent() >= 0) {
+	// 	digits_after_x = (x.digits() > digits_before_x)? (x.digits() - digits_before_x) : 0;
+	// }
+	// else {
+	// 	digits_after_x = abs(x.get_exponent()) + x.digits() - 1; // There are (exponent - 1) zeroes
+	// 															 // followed by all the digits.  
+	// }
+	// if (y.get_exponent() >= 0) {
+	// 	digits_after_y = (y.digits() > digits_before_y)?  y.digits() - digits_before_y: 0;
+	// }
+	// else {
+	// 	digits_after_y = abs(y.get_exponent()) + y.digits() - 1; // There are (exponent - 1) zeroes
+	// 															 // followed by all the digits.  
+	// }
+	size = std::max(digits_before_x, digits_before_y) 
+	       + std::max(digits_after_x, digits_after_y);
+   	if (DEBUG) {
+		printf("digits_before_x: %d \ndigits_before_y: %d \ndigits_after_x: %d \ndigits_after_y: %d\n"
+			   ,digits_before_x, digits_before_y, digits_after_x, digits_after_y);
+		printf("return (int): %d\n", size);
+		printf("Leaving find_size...\n\n");
+	}
+	return size;
+
 }
