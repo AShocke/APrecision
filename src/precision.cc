@@ -8,7 +8,9 @@
 
 
 real_precision::real_precision(bool negative, int exponent, int decimal_precision,
-			       int base, bool debug) {
+			       int base, bool debug) 
+{
+	//TODO Improper input checking
   int size = exponent + decimal_precision + 1;
   decimal_precision = decimal_precision;
   decimal_ = exponent;
@@ -20,7 +22,26 @@ real_precision::real_precision(bool negative, int exponent, int decimal_precisio
   DEBUG = debug;
 }
 
-std::string real_precision::real_to_string()
+real_precision::real_precision(std::vector<int>* real_number, bool negative,
+    int exponent, int decimal_precision, int base,
+    bool debug)
+{
+	//TODO improper input checking
+    int size = real_number->size();
+    decimal_precision = decimal_precision;
+    decimal_ = exponent;
+    exponent_ = exponent;
+    base_ = base;
+    is_negative_ = negative;
+    store_ =  new std::vector<int> (size);
+	for (int i = 0; i < size; i++) {
+		store_->at(i) = real_number->at(i);
+	}
+    store_size_ = size;
+    DEBUG = debug;
+    	
+}
+std::string real_precision::real_to_string() 
 {
 	std::string real = "";
 	if (is_negative_) {
@@ -74,23 +95,38 @@ real_precision real_precision::operator+(real_precision n)
  * **both numbers have the same base**
  * the bases of the real_precision objects are valid with their stores
  * Require that the numbers have the same all around precision, before and after decimal place
+ * Overflows are note accounted for, so make sure there is enough precision in the exponent to add.
  */
 real_precision real_precision::add(real_precision n)
 {
 	if (DEBUG) {
 		printf("In add(real_precision)...\n");
 		printf("Adding %s and %s \n", this->real_to_string().c_str(),
-		       n.real_to_string().c_str());
-		if (exponent_ != n.exponent_ || decimal_precision_ != n.decimal_precision_) {
-		    std::cerr << "Real precision objects are not of the same precision. \n";
-		    return n;
-		}
-		else {
-		    
-		}
-		
+		     n.real_to_string().c_str());
 	}
-	
+	if (exponent_ != n.exponent_ || decimal_precision_ != n.decimal_precision_) {
+	    std::cerr << "Real precision objects are not of the same precision. \n";
+	    return n;
+	}
+	else {
+		std::vector<int> * sum_store = new std::vector<int>(store_size_);
+		if ((*store_)[0] + (*n.store_)[0] >= 9) {
+			std::cerr << "WARNING: Possible Overflow:\n";
+		}
+		int carry = 0;
+		for (int i = 0; i < store_size_; i++) {
+			int sum = (*store_)[i] + (*n.store_)[i] + carry;
+			sum_store->at(i) = sum % 10;
+			carry = sum / 10;
+		}
+		if(carry != 0)
+		{
+			std::cerr << "WARNING: An overflow has occured " 
+				<< "further operations with the resulting class is marred.\n";
+		}
+		return real_precision(sum_store, is_negative_, exponent_, decimal_precision_, base_,
+		 DEBUG);
+	}
 
    if (DEBUG) {
 	   printf("leaving add...\n");
@@ -125,39 +161,3 @@ void real_precision::print_to_string()
  *
  */
 
-// prepares a vector for addition and subtraction
-int real_precision::find_size(real_precision x, real_precision y)
-{
-	if (DEBUG) {
-		printf("In find_size(real_precision, real_precision)\n\n");
-	}
-	int size;
-	int digits_before_x = x.before_decimal(); // digits before the decimal (to the right)
-	int digits_before_y = y.before_decimal();
-	int digits_after_x = x.after_decimal(); // digits after the decimal (to the right)
-	int digits_after_y = y.after_decimal();
-	// if (x.get_exponent() >= 0) {
-	// 	digits_after_x = (x.digits() > digits_before_x)? (x.digits() - digits_before_x) : 0;
-	// }
-	// else {
-	// 	digits_after_x = abs(x.get_exponent()) + x.digits() - 1; // There are (exponent - 1) zeroes
-	// 															 // followed by all the digits.  
-	// }
-	// if (y.get_exponent() >= 0) {
-	// 	digits_after_y = (y.digits() > digits_before_y)?  y.digits() - digits_before_y: 0;
-	// }
-	// else {
-	// 	digits_after_y = abs(y.get_exponent()) + y.digits() - 1; // There are (exponent - 1) zeroes
-	// 															 // followed by all the digits.  
-	// }
-	size = std::max(digits_before_x, digits_before_y) 
-	       + std::max(digits_after_x, digits_after_y);
-   	if (DEBUG) {
-		printf("digits_before_x: %d \ndigits_before_y: %d \ndigits_after_x: %d \ndigits_after_y: %d\n"
-			   ,digits_before_x, digits_before_y, digits_after_x, digits_after_y);
-		printf("return (int): %d\n", size);
-		printf("Leaving find_size...\n\n");
-	}
-	return size;
-
-}

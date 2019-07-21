@@ -17,7 +17,7 @@ public:
       * TODO in .cc file
 
       */
-     real_precision(std::vector<int> real_number, bool negative, int exponent_num,
+     real_precision(std::vector<int>* real_number, bool negative,
 		    int exponent, int decimal_precision, int base,
 		    bool debug = false);
 
@@ -88,7 +88,7 @@ private:
      int decimal_; // The index after the decimal point
      int decimal_precision_;
      void debug_msg() {
-	  printf("Debugging On\n");
+	 printf("Debugging On\n");
      }
      /*
       * Helper to operations

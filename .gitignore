@@ -1,6 +1,7 @@
 # Executables
 *.exe
 *.out
+*.o
 *.app
 # vim memory files
 [._]*.s[a-w][a-z]
