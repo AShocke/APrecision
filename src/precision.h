@@ -19,10 +19,10 @@ public:
       */
      real_precision(std::vector<int>* real_number, bool negative,
 		    int exponent, int decimal_precision, int base,
-		    bool debug = false);
+		    bool debug = false, bool error = false);
 
      real_precision(bool negative, int exponent, int decimal_precision,
-		    int base, bool debug = false);
+		    int base, bool debug = false, bool error = false);
      /*
       * String constructor:
       * Converts a string to a real_precision instance. If string is invalid and error
@@ -41,9 +41,18 @@ public:
 	  decimal_precision_ = 0;
 	  is_negative_ = false;
      }
+	 /*
+	  * A precision type specifyin an error of some sort
+	  */
+	 real_precision error_precision() {
+		 real_precision err(false, 0, 0, 0, DEBUG, true);
+		 return err;
+	 }
      // destrctor
      ~real_precision() {
-	  delete store_;
+		 printf("In destructor\n");
+		 delete store_;
+		 printf("Object destroyed.\n");
      }
      /*
       * get functions
@@ -90,6 +99,7 @@ private:
      void debug_msg() {
 	 printf("Debugging On\n");
      }
+	 bool is_error_;
      /*
       * Helper to operations
       */

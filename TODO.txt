@@ -1,3 +1,29 @@
 Keep this TODO updated with bugs and intended features
 
 - ADD a maximum store size to avoid destroying a system
+
+*** BUGS ****
+
+!!! FATAL
+For some reason when computing a sum, the store of the sum
+is already deallocated, which causes a fatal error. 
+Example Situation
+
+1 2 3 
+3210
+3 2 1 
+1230
+In add(real_precision)...
+Adding 3210 and 1230 
+leaving add...
+In destructor
+Object destroyed.
+4 4 4 
+4440
+In destructor
+Object destroyed.
+In destructor [for the sum of 3210 and 1230]
+main(5683,0x11afdc5c0) malloc: *** error for object 0xc000000000000000: pointer being freed was not allocated
+main(5683,0x11afdc5c0) malloc: *** set a breakpoint in malloc_error_break to debug
+Abort trap: 6
+

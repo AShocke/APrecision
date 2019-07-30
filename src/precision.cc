@@ -8,27 +8,29 @@
 
 
 real_precision::real_precision(bool negative, int exponent, int decimal_precision,
-			       int base, bool debug) 
+			       int base, bool debug, bool error) 
 {
 	//TODO Improper input checking
   int size = exponent + decimal_precision + 1;
-  decimal_precision = decimal_precision;
+  decimal_precision_ = decimal_precision;
   decimal_ = exponent;
   exponent_ = exponent;
   base_ = base;
   is_negative_ = negative;
   store_ =  new std::vector<int> (size);
+  store_->at(0) = 0;
   store_size_ = size;
   DEBUG = debug;
+  is_error_ = error;
 }
 
 real_precision::real_precision(std::vector<int>* real_number, bool negative,
     int exponent, int decimal_precision, int base,
-    bool debug)
+    bool debug, bool error)
 {
 	//TODO improper input checking
     int size = real_number->size();
-    decimal_precision = decimal_precision;
+    decimal_precision_ = decimal_precision;
     decimal_ = exponent;
     exponent_ = exponent;
     base_ = base;
@@ -38,11 +40,15 @@ real_precision::real_precision(std::vector<int>* real_number, bool negative,
 		store_->at(i) = real_number->at(i);
 	}
     store_size_ = size;
-    DEBUG = debug;
-    	
+    DEBUG = debug;  
+	is_error_ = error; 	
 }
+
 std::string real_precision::real_to_string() 
 {
+	if (is_error_ == true) {
+		return "ERROR";
+	}
 	std::string real = "";
 	if (is_negative_) {
 		real.append("-");
@@ -86,6 +92,10 @@ std::string real_precision::real_to_string()
 
 real_precision real_precision::operator+(real_precision n)
 {
+	if (is_error_ == true) {
+		printf("Cannot do operation on error precision.\n");
+		return error_precision();
+	}
 	return add(n);
 }
 
@@ -99,14 +109,24 @@ real_precision real_precision::operator+(real_precision n)
  */
 real_precision real_precision::add(real_precision n)
 {
+	if (is_error_ == true) {
+		printf("Cannot do operation on error precision.\n");
+		return error_precision();
+	}
 	if (DEBUG) {
 		printf("In add(real_precision)...\n");
 		printf("Adding %s and %s \n", this->real_to_string().c_str(),
 		     n.real_to_string().c_str());
 	}
 	if (exponent_ != n.exponent_ || decimal_precision_ != n.decimal_precision_) {
+		if (DEBUG) {
+			std::cerr << "this exponent = " << exponent_ 
+				<< "; other exponent = " << n.exponent_  << "\n";
+			std::cerr << "this decimal = " << decimal_precision_
+				<< "; other decimal = " << n.decimal_precision_ << "\n";
+		}
 	    std::cerr << "Real precision objects are not of the same precision. \n";
-	    return n;
+	    return error_precision();
 	}
 	else {
 		std::vector<int> * sum_store = new std::vector<int>(store_size_);
@@ -124,26 +144,36 @@ real_precision real_precision::add(real_precision n)
 			std::cerr << "WARNING: An overflow has occured " 
 				<< "further operations with the resulting class is marred.\n";
 		}
-		return real_precision(sum_store, is_negative_, exponent_, decimal_precision_, base_,
+	   
+		 real_precision sum_p(sum_store, is_negative_, exponent_, decimal_precision_, base_,
 		 DEBUG);
+		 delete sum_store;
+ 	    if (DEBUG) {
+ 	 	   printf("leaving add...\n");
+ 	    }
+		 return sum_p;
 	}
 
-   if (DEBUG) {
-	   printf("leaving add...\n");
-   }
-   return n;
+   
 }
 
 // copies the numbers of a given real_precison object to a vector
 void real_precision::copy_store(std::vector<int> store, int start_s,  int to_add,
 				std::vector<int> &n, int start_n)
 {
+	if (is_error_ == true) {
+		printf("Cannot do operation on error precision.\n");
+		return;
+	}
 	for (int i = start_n; i < start_n + to_add; i++ ) {
 		n[i] = store[start_s + start_n-i];
 	}
 }
 void real_precision::print()
 {
+	if (is_error_ == true) {
+		printf("ERR\n");
+	}
 	for (unsigned i = 0; i < store_->size(); i++) {
 	    printf("%d ", (*store_)[i]);
 	}
@@ -151,6 +181,10 @@ void real_precision::print()
 }
 void real_precision::print_to_string()
 {
+	if (is_error_ == true) {
+		printf("ERR\n");
+		return;
+	}
 	std::string s = this->real_to_string();
 	printf("%s\n", s.c_str());
 }
