@@ -29,7 +29,22 @@ public:
       * message is outputed and empty_precision() is called
       */
      real_precision(std::string real_string, int precision);
-     real_precision() {
+	 /*
+	  * Copy constructor
+	  */
+     real_precision (const real_precision &to_copy) {
+         DEBUG = to_copy.DEBUG;
+         store_size_ = to_copy.store_size_;
+         exponent_  = to_copy.exponent_;
+         is_negative_ =  to_copy.is_negative_;
+         base_ = to_copy.base_;
+         decimal_ =  to_copy.decimal_; //to_copyThe index after the decimal point
+         decimal_precision_ = to_copy.decimal_precision_;
+ 		is_error_ = to_copy.is_error_;
+ 		store_ = new std::vector<int>(store_size_);	
+ 		for (int i = 0 ; i < to_copy.store_size_; i++) {
+ 			store_->at(i) = to_copy.store_->at(i);
+ 		}
      };
      /* Can be used to set a default precision class
       * (store_.size() = 0, exponent_ = 0, is_negative_ = false)
@@ -40,21 +55,26 @@ public:
 	  decimal_ = 0;
 	  decimal_precision_ = 0;
 	  is_negative_ = false;
-     }
+     };
 	 /*
 	  * A precision type specifyin an error of some sort
 	  */
 	 real_precision error_precision() {
 		 real_precision err(false, 0, 0, 0, DEBUG, true);
 		 return err;
-	 }
+	 };
      // destrctor
      ~real_precision() {
+		 if (DEBUG) {
 		 printf("In destructor\n");
-		 delete store_;
+		 if (store_ != nullptr) {
+			 	 delete store_;
+				 store_ = nullptr;
+			 }
 		 printf("Object destroyed.\n");
-     }
-     /*
+	  }
+	};
+	  /*
       * get functions
       */
      std::vector<int>* get_real_store() { return store_; }
@@ -63,7 +83,7 @@ public:
      size_t size() { return store_->size(); }
      int before_decimal() { // to the right of decimal point
 	  return (exponent_ >= 0)? exponent_ + 1: 0;
-     };
+     }
 
      int after_decimal() { // to the left of decimal point
 	  int after = before_decimal();
@@ -73,14 +93,14 @@ public:
 	  else {
 	       return abs(exponent_) + store_->size() - 1;
 	  }
-     }
+     };
 	
      /* Operations */
      /*
       * 1x10^4 + 1x10^(-4) = 10000 + 0.00001 a total of 10 digits
       */
      real_precision operator+ (real_precision a);
-     real_precision add(real_precision n);
+     real_precision add(real_precision &n);
      real_precision subtract(real_precision a);
      real_precision multiply(real_precision a);
      real_precision karatsuba(real_precision a);

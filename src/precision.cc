@@ -107,7 +107,7 @@ real_precision real_precision::operator+(real_precision n)
  * Require that the numbers have the same all around precision, before and after decimal place
  * Overflows are note accounted for, so make sure there is enough precision in the exponent to add.
  */
-real_precision real_precision::add(real_precision n)
+real_precision real_precision::add(real_precision &n)
 {
 	if (is_error_ == true) {
 		printf("Cannot do operation on error precision.\n");
@@ -129,8 +129,8 @@ real_precision real_precision::add(real_precision n)
 	    return error_precision();
 	}
 	else {
-		std::vector<int> * sum_store = new std::vector<int>(store_size_);
-		if ((*store_)[0] + (*n.store_)[0] >= 9) {
+		std::vector<int>* sum_store = new std::vector<int>(store_size_);
+		if ((*store_)[store_size_ - 1] + (*n.store_)[store_size_ - 1] >= 9) {
 			std::cerr << "WARNING: Possible Overflow:\n";
 		}
 		int carry = 0;
@@ -147,7 +147,7 @@ real_precision real_precision::add(real_precision n)
 	   
 		 real_precision sum_p(sum_store, is_negative_, exponent_, decimal_precision_, base_,
 		 DEBUG);
-		 delete sum_store;
+		delete sum_store;
  	    if (DEBUG) {
  	 	   printf("leaving add...\n");
  	    }

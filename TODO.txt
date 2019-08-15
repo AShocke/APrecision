@@ -1,11 +1,12 @@
 Keep this TODO updated with bugs and intended features
 
 - ADD a maximum store size to avoid destroying a system
-
-*** BUGS ****
-
+************** NEW ISSUES **************
+************** RESOLVED ISSUES **********
+Forgot to write copy constructor, whoops. 
+[BUG]
 !!! FATAL
-For some reason when computing a sum, the store of the sum
+For some reason when computing a sum, the store of the (returned value of the) sum
 is already deallocated, which causes a fatal error. 
 Example Situation
 
@@ -22,7 +23,7 @@ Object destroyed.
 4440
 In destructor
 Object destroyed.
-In destructor [for the sum of 3210 and 1230]
+In destructor [for the returned sum of 3210 and 1230]
 main(5683,0x11afdc5c0) malloc: *** error for object 0xc000000000000000: pointer being freed was not allocated
 main(5683,0x11afdc5c0) malloc: *** set a breakpoint in malloc_error_break to debug
 Abort trap: 6

@@ -8,3 +8,4 @@
 [._]s[a-w][a-z]
 .netrwhist
 *~
+*.dSYM
