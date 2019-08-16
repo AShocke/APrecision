@@ -101,9 +101,9 @@ public:
       */
      real_precision operator+ (real_precision a);
      real_precision add(real_precision &n);
-     real_precision subtract(real_precision a);
-     real_precision multiply(real_precision a);
-     real_precision karatsuba(real_precision a);
+     real_precision subtract(real_precision &a);
+     real_precision multiply(real_precision &a);
+     real_precision karatsuba(real_precision &a);
      std::string real_to_string();
      void print();
      void print_to_string();
